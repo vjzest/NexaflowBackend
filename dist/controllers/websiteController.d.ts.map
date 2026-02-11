@@ -1,0 +1,1 @@
+{"version":3,"file":"websiteController.d.ts","sourceRoot":"","sources":["../../src/controllers/websiteController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAW,QAAQ,EAAE,MAAM,SAAS,CAAC;AAG5C,eAAO,MAAM,aAAa,GAAU,KAAK,GAAG,EAAE,KAAK,QAAQ,kBAY1D,CAAC;AAEF,eAAO,MAAM,WAAW,GAAU,KAAK,GAAG,EAAE,KAAK,QAAQ,kBAOxD,CAAC;AAEF,eAAO,MAAM,aAAa,GAAU,KAAK,GAAG,EAAE,KAAK,QAAQ,4DAQ1D,CAAC"}

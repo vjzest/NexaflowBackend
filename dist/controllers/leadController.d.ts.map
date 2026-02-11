@@ -1,0 +1,1 @@
+{"version":3,"file":"leadController.d.ts","sourceRoot":"","sources":["../../src/controllers/leadController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAqC5C,eAAO,MAAM,WAAW,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,4DAuE5D,CAAC;AAEF,eAAO,MAAM,QAAQ,GAAU,KAAK,GAAG,EAAE,KAAK,QAAQ,kBAOrD,CAAC;AAEF,eAAO,MAAM,UAAU,GAAU,KAAK,GAAG,EAAE,KAAK,QAAQ,4DAevD,CAAC"}
