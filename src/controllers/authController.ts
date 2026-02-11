@@ -23,7 +23,8 @@ export const registerUser = async (req: Request, res: Response) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Always true for cross-site cookies
+            sameSite: 'none', // Required for cross-site cookies
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
@@ -51,7 +52,8 @@ export const loginUser = async (req: Request, res: Response) => {
 
             res.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: true, // Always true for cross-site cookies
+                sameSite: 'none', // Required for cross-site cookies
                 maxAge: 30 * 24 * 60 * 60 * 1000,
             });
 
@@ -75,6 +77,8 @@ export const loginUser = async (req: Request, res: Response) => {
 export const logoutUser = (req: Request, res: Response) => {
     res.cookie('token', '', {
         httpOnly: true,
+        secure: true,
+        sameSite: 'none',
         expires: new Date(0),
     });
     res.json({ message: 'Logged out successfully' });
