@@ -31,7 +31,7 @@ export const registerUser = async (req: Request, res: Response) => {
         res.status(201).json({
             _id: user._id,
             name: user.name,
-            email: user.email,
+            email: user.email || '',
             role: user.role,
             apiKey: user.apiKey,
             plan: user.plan,
@@ -60,7 +60,7 @@ export const loginUser = async (req: Request, res: Response) => {
             res.json({
                 _id: user._id,
                 name: user.name,
-                email: user.email,
+                email: user.email || '',
                 role: user.role,
                 apiKey: user.apiKey,
                 plan: user.plan,

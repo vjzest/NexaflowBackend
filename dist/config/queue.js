@@ -12,7 +12,7 @@ const isRedisAvailable = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 let connection = null;
 let leadQueue = null;
 let useMock = false;
-// In-memory queue for dev/local environments without Redis
+// In-memory queue fallback
 const inMemoryQueue = [];
 // Quick check for Redis
 const tester = new IORedis(isRedisAvailable, {
@@ -22,7 +22,7 @@ const tester = new IORedis(isRedisAvailable, {
 tester.on('error', () => { });
 tester.ping()
     .then(() => {
-    console.log('✅ Redis connected. Production Automation active.');
+    console.log('✅ Redis connected. Automation active.');
     connection = new IORedis(isRedisAvailable, { maxRetriesPerRequest: null });
     leadQueue = new Queue('lead_processing', { connection });
 })
@@ -47,24 +47,26 @@ export const addLeadJob = async (lead) => {
     if (useMock) {
         console.log(`[InMemory] Adding job for ${lead.name}`);
         inMemoryQueue.push(jobData);
-        processInMemoryJob(jobData); // Trigger immediately
+        processInMemoryJob(jobData);
         return;
     }
     if (!leadQueue)
-        return; // Should not happen if Redis connected
+        return;
     return await leadQueue.add('process_lead', jobData, {
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000 }
     });
 };
-// Processor Logic (Shared)
+// Processor Logic
 const processJobLogic = async (data) => {
     const { leadId, userId, name, phone, source } = data;
     console.log(`⚡ Processing Automation for: ${name}`);
+    let analysis = { score: 5, summary: 'AI service unavailable' };
+    let autoReplyMessage = "Hi! Thank you for reaching out. We will contact you soon.";
+    let twilioStatus = 'pending';
+    let callingStatus = 'pending';
     try {
         // 1. AI Analysis
-        // 1. AI Analysis
-        let analysis = { score: 5, summary: 'AI service unavailable' };
         try {
             analysis = await analyzeLead(data);
             await Lead.findByIdAndUpdate(leadId, {
@@ -73,62 +75,58 @@ const processJobLogic = async (data) => {
             });
         }
         catch (e) {
-            console.warn('AI Analysis failed, skipping:', e.message);
+            console.warn('AI Analysis failed:', e.message);
         }
-        // 2. Automated Reply via Twilio
-        let autoReplyMessage = "Simulated Auto-Reply";
+        // 2. Automated Reply
         try {
             autoReplyMessage = await suggestReply(name, `Lead from ${source}`);
-            // Only send if phone exists and is realistic
             if (phone && phone.length > 8) {
                 await sendSMS(phone, autoReplyMessage);
+                twilioStatus = 'success';
             }
             else {
-                console.log(`[Simulated] Would send SMS to ${phone}: "${autoReplyMessage}"`);
+                twilioStatus = 'simulated';
             }
         }
         catch (e) {
-            console.warn(`Twilio skipped: ${e.message}`);
-            // If Twilio fails, we still log it as a success for the DEMO but note it's simulated/failed
-            console.log(`[Simulated] SMS to ${phone}: "${autoReplyMessage}"`);
+            console.error(`SMS failed: ${e.message}`);
+            twilioStatus = 'failed';
         }
-        // 3. AI Automated Call (NEW)
+        // 3. AI Automated Call
         try {
             if (phone && phone.length > 8) {
-                console.log(`[AI-Call] Scheduling automated call for ${name}...`);
-                await triggerAutoCall("+1234567890", phone); // Static agent number for demo
+                const callResult = await triggerAutoCall("+1234567890", phone, autoReplyMessage);
+                callingStatus = callResult.success ? 'success' : 'failed';
+            }
+            else {
+                callingStatus = 'simulated';
             }
         }
         catch (e) {
-            console.warn('AI Call failed, skipping:', e.message);
+            console.error('AI Call failed:', e.message);
+            callingStatus = 'failed';
         }
+        const finalStatus = (twilioStatus === 'failed' || callingStatus === 'failed') ? 'failed' : 'success';
         await Log.create({
             userId,
             type: 'lead_capture',
-            status: 'success',
-            message: `🤖 Automation Executed: AI Analysis + Auto-Reply + AI Call sent to ${name}`,
-            metadata: { leadId, analysis: analysis, reply: autoReplyMessage }
+            status: finalStatus,
+            message: finalStatus === 'success'
+                ? `🤖 Automation Executed: AI Analysis + Auto-Reply + AI Call sent to ${name}`
+                : `⚠️ Automation Partial Failure for ${name}`,
+            metadata: { leadId, analysis, twilioStatus, callingStatus }
         });
-        // Update Lead Status to Contacted
         await Lead.findByIdAndUpdate(leadId, { status: 'contacted' });
         const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
         if (n8nWebhookUrl) {
-            await axios.post(n8nWebhookUrl, { ...data, analysis, autoReply: autoReplyMessage });
+            await axios.post(n8nWebhookUrl, { ...data, analysis, autoReply: autoReplyMessage, twilioStatus, callingStatus });
         }
     }
     catch (err) {
-        console.error('Lead processing failed:', err.message);
-        await Log.create({
-            userId,
-            type: 'system_error',
-            status: 'failed',
-            message: `Automation failed: ${err.message}`,
-            metadata: { leadId }
-        });
+        console.error('Lead processing crashed:', err.message);
     }
 };
 const processInMemoryJob = async (data) => {
-    // Simulate delay
     setTimeout(async () => {
         await processJobLogic(data);
     }, 2000);
@@ -137,7 +135,7 @@ const processInMemoryJob = async (data) => {
 export const startLeadWorker = () => {
     setTimeout(() => {
         if (useMock) {
-            console.log('✅ In-Memory Worker Active. Listening for jobs...');
+            console.log('✅ In-Memory Worker Active.');
             return;
         }
         if (!connection)
@@ -145,9 +143,7 @@ export const startLeadWorker = () => {
         const worker = new Worker('lead_processing', async (job) => {
             await processJobLogic(job.data);
         }, { connection });
-        worker.on('completed', (job) => console.log(`Job ${job.id} completed!`));
-        worker.on('failed', (job, err) => console.error(`Job ${job?.id} failed: ${err.message}`));
-        console.log('✅ Redis Worker started and listening for jobs...');
+        console.log('✅ Lead Worker started.');
     }, 3000);
 };
 export default leadQueue;

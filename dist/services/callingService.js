@@ -1,16 +1,24 @@
-export const triggerAutoCall = async (agentPhone, leadPhone) => {
-    console.log(`[CallingService] Triggering auto-call: ${agentPhone} <-> ${leadPhone}`);
-    // Example Exotel Integration
-    const EXOTEL_SID = process.env.EXOTEL_SID;
-    const EXOTEL_TOKEN = process.env.EXOTEL_TOKEN;
-    const EXOTEL_KEY = process.env.EXOTEL_KEY;
-    if (!EXOTEL_SID || !EXOTEL_TOKEN) {
-        return { success: false, message: 'Calling credentials missing' };
-    }
+import { initiateCall } from './twilioService';
+/**
+ * Triggers an automated AI call using Twilio.
+ * @param agentPhone Optional agent phone for recording/forwarding (not used in direct AI call)
+ * @param leadPhone The phone number of the lead
+ * @param message The message to be spoken by the AI
+ */
+export const triggerAutoCall = async (agentPhone, leadPhone, message) => {
+    console.log(`[CallingService] Triggering AI call to: ${leadPhone}`);
+    const textToSay = message || "Hello, this is an automated call from HousePlanFiles. Thank you for your interest. Our representative will contact you shortly.";
+    // Generate TwiML directly
+    const twiml = `
+        <Response>
+            <Say voice="Polly.Matthew" language="en-IN">${textToSay}</Say>
+            <Pause length="1"/>
+            <Say voice="Polly.Matthew" language="en-IN">Goodbye.</Say>
+        </Response>
+    `;
     try {
-        // Mocking Exotel API call
-        // await axios.post(`https://api.exotel.com/v1/Accounts/${EXOTEL_SID}/Calls/connect.json`, { ... });
-        return { success: true, callId: `call_${Date.now()}` };
+        const result = await initiateCall(leadPhone, twiml.trim());
+        return { success: true, callId: result.sid };
     }
     catch (error) {
         console.error('Auto-call failed:', error.message);

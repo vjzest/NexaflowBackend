@@ -17,13 +17,14 @@ export const registerUser = async (req, res) => {
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Always true for cross-site cookies
+            sameSite: 'none', // Required for cross-site cookies
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         res.status(201).json({
             _id: user._id,
             name: user.name,
-            email: user.email,
+            email: user.email || '',
             role: user.role,
             apiKey: user.apiKey,
             plan: user.plan,
@@ -42,13 +43,14 @@ export const loginUser = async (req, res) => {
             const token = generateToken(user._id.toString());
             res.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: true, // Always true for cross-site cookies
+                sameSite: 'none', // Required for cross-site cookies
                 maxAge: 30 * 24 * 60 * 60 * 1000,
             });
             res.json({
                 _id: user._id,
                 name: user.name,
-                email: user.email,
+                email: user.email || '',
                 role: user.role,
                 apiKey: user.apiKey,
                 plan: user.plan,
@@ -66,6 +68,8 @@ export const loginUser = async (req, res) => {
 export const logoutUser = (req, res) => {
     res.cookie('token', '', {
         httpOnly: true,
+        secure: true,
+        sameSite: 'none',
         expires: new Date(0),
     });
     res.json({ message: 'Logged out successfully' });

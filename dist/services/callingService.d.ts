@@ -1,17 +1,16 @@
-export declare const triggerAutoCall: (agentPhone: string, leadPhone: string) => Promise<{
-    success: boolean;
-    message: string;
-    callId?: never;
-    error?: never;
-} | {
+/**
+ * Triggers an automated AI call using Twilio.
+ * @param agentPhone Optional agent phone for recording/forwarding (not used in direct AI call)
+ * @param leadPhone The phone number of the lead
+ * @param message The message to be spoken by the AI
+ */
+export declare const triggerAutoCall: (agentPhone: string, leadPhone: string, message?: string) => Promise<{
     success: boolean;
     callId: string;
-    message?: never;
     error?: never;
 } | {
     success: boolean;
     error: any;
-    message?: never;
     callId?: never;
 }>;
 //# sourceMappingURL=callingService.d.ts.map
