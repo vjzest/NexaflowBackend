@@ -16,7 +16,7 @@ const LeadSchema: Schema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
     email: { type: String },
-    phone: { type: String, required: true },
+    phone: { type: String },
     source: { type: String, default: 'website' },
     data: { type: Map, of: Schema.Types.Mixed },
     status: { type: String, enum: ['new', 'contacted', 'converted', 'lost'], default: 'new' },
